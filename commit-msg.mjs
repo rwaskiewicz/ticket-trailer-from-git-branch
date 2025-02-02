@@ -42,9 +42,9 @@ try {
     execSync(`git interpret-trailers --in-place --trailer "Ticket:${trailer}" "${commitMsgFile}"`);
 } catch (error) {
     if (error instanceof Error) {
-        printWarningAndExitOk(`Error in prepare-commit-msg hook: ${error.message}`);
+        printWarningAndExitOk(`Error in commit-msg hook: ${error.message}`);
     } else {
-        printWarningAndExitOk(`Unknown error in prepare-commit-msg hook ${error}`);
+        printWarningAndExitOk(`Unknown error in commit-msg hook ${error}`);
     }
 }
 exit(0);
