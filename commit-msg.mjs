@@ -36,8 +36,8 @@ const printWarningAndExitOk = (message) => {
 const getTicketFromBranch = () => {
     try {
         const currentBranch = execSync('git symbolic-ref --short HEAD', { encoding: 'utf8', stdio: 'pipe' }).trim();
-        const pattern = new RegExp(`^${ticketPrefix}(\\d+).*`, 'i');
-        const match = currentBranch.match(pattern);
+        const branchPattern = new RegExp(`^${ticketPrefix}(\\d+).*`, 'i');
+        const match = currentBranch.match(branchPattern);
         return match?.[1] ?? null;
     } catch {
         return null;
