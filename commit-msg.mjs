@@ -3,7 +3,7 @@
 
 import { argv, exit } from 'node:process';
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 // ANSI color codes
 const YELLOW = '\x1b[33m';
@@ -50,22 +50,9 @@ const getTicketFromBranch = () => {
  * @returns {string|null} The ticket number or null if not found
  */
 const getTicketFromMessage = (commitMsg) => {
-    const ticketPattern = new RegExp(`${ticketPrefix}(\\d+)`, 'gi');
-    const trailerPattern = new RegExp(`^Ticket: ${ticketPrefix}(\\d+)`, 'gim');
-
-    // First check for trailers and take the last one if found
-    const trailerMatches = Array.from(commitMsg.matchAll(trailerPattern));
-    if (trailerMatches.length > 0) {
-        return trailerMatches[trailerMatches.length - 1][1];
-    }
-
-    // If no trailer, find all ticket mentions and take the last one
-    const matches = Array.from(commitMsg.matchAll(ticketPattern));
-    if (matches.length > 0) {
-        return matches[matches.length - 1][1];
-    }
-
-    return null;
+    const ticketPattern = new RegExp(`^${ticketPrefix}(\\d+).*`, 'gi');
+    const match = commitMsg.match(ticketPattern);
+    return match?.[1] ?? null;
 };
 
 try {
@@ -74,13 +61,29 @@ try {
         printWarningAndExitOk('Unable to determine git commit message file.');
     }
 
-    let ticketNumber = getTicketFromBranch() ?? getTicketFromMessage(readFileSync(commitMsgFile, 'utf8'));
-    if (!ticketNumber) {
-        printWarningAndExitOk(`No ticket number found in branch name or commit message (expected format: ${ticketPrefix}[NUMBER])`);
+    let commitMsg;
+    try {
+        commitMsg = readFileSync(commitMsgFile, 'utf8');
+    } catch (error) {
+        printWarningAndExitOk(`Unable to read git commit message file: ${error}`);
     }
 
-    const trailer = `${ticketPrefix}${ticketNumber}`;
-    execSync(`git interpret-trailers --in-place --trailer "Ticket:${trailer}" "${commitMsgFile}"`);
+    const hasLeadingTicket = getTicketFromMessage(commitMsg) !== null;
+    if (hasLeadingTicket) {
+        exit(0); // already have the ticket number, exit
+    }
+
+    // TODO: This doesn't work for reword + squash on 2 commits
+    const ticketNumber = getTicketFromBranch() ?? getTicketFromMessage(commitMsg);
+    if (!ticketNumber) {
+        printWarningAndExitOk(`No ticket number found in branch name or commit message (expected format in either: '${ticketPrefix}[NUMBER]')`);
+    }
+
+    try {
+        writeFileSync(commitMsgFile, `${ticketPrefix.toUpperCase()}${ticketNumber} ${commitMsg}`, 'utf8')
+    } catch(error) {
+        printWarningAndExitOk(`Unable to write to git commit message file: ${error}`);
+    }
 } catch (error) {
     if (error instanceof Error) {
         printWarningAndExitOk(`Error in commit-msg hook: ${error.message}`);
