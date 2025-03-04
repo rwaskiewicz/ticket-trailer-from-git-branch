@@ -80,7 +80,7 @@ try {
     }
 
     try {
-        writeFileSync(commitMsgFile, `${ticketPrefix.toUpperCase()}${ticketNumber} ${commitMsg}`, 'utf8')
+        writeFileSync(commitMsgFile, `${ticketPrefix.toUpperCase()}${ticketNumber}: ${commitMsg}`, 'utf8')
     } catch(error) {
         printWarningAndExitOk(`Unable to write to git commit message file: ${error}`);
     }
