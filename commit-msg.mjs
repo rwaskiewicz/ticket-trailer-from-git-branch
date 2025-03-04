@@ -52,7 +52,7 @@ const getTicketFromBranch = () => {
 const getTicketFromMessage = (commitMsg) => {
     const ticketPattern = new RegExp(`^${ticketPrefix}(\\d+).*`, 'gi');
     const match = commitMsg.match(ticketPattern);
-    return match?.[1] ?? null;
+    return match?.[0] ?? null;
 };
 
 try {
